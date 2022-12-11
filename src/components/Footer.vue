@@ -1,7 +1,10 @@
-<template lang="">
+<template>
   <div class="footer">
     <div class="footer-left">
-      <img src="../assets/img/logo.webp" alt="歌曲封面" />
+      <div class="footer-img" @click="handleMusicDetails">
+        <img src="../assets/img/logo.webp" alt="歌曲封面" />
+        <div><i class="iconfont" :class="isShow ? 'c' : 'icon-xialajiantou1'"></i></div>
+      </div>
       <div class="footer-song">
         <div>
           <span>歌曲名称<span>歌曲其他信息......</span></span>
@@ -29,7 +32,7 @@
     <div class="footer-right">
       <i class="iconfont icon-shengyin"></i>
       <div class="footer-voice">
-        <div ref="voiceProgress">
+        <div>
           <span
             :style="{ bottom: bottom + 'px' }"
             @mousedown="handleVoiceRegulatorMousedown"
@@ -41,11 +44,13 @@
       <i class="iconfont icon-24gf-playlist"></i>
     </div>
   </div>
+  <MusicDetails :isShow="isShow" @MusicShow="handleMusicDetails" />
 </template>
 
 <script lang="ts" setup>
 import { ref } from "vue";
-const voiceProgress = ref<any>(null);
+import MusicDetails from "./musicDetails/MusicDetails.vue";
+
 let bottom = ref<number>(0);
 let isMove = false;
 let yVal = 0;
@@ -66,6 +71,11 @@ function handleVoiceRegulatorMouseup() {
 }
 document.onmousemove = handleVoiceRegulatorMousemove;
 document.onmouseup = handleVoiceRegulatorMouseup;
+
+let isShow = ref<boolean>(false);
+function handleMusicDetails() {
+  isShow.value = !isShow.value;
+}
 </script>
 
 <style lang="less" scoped>
@@ -77,6 +87,8 @@ document.onmouseup = handleVoiceRegulatorMouseup;
   justify-content: space-between;
   box-sizing: border-box;
   padding: 0 30px;
+  position: relative;
+  z-index: 99;
   .footer-left,
   .footer-center,
   .footer-right {
@@ -85,14 +97,38 @@ document.onmouseup = handleVoiceRegulatorMouseup;
     align-items: center;
   }
   .footer-left {
-    img {
-      width: 60px;
-      height: 60px;
-      margin-right: 10px;
-      cursor: pointer;
+    .footer-img {
+      display: flex;
+      position: relative;
+      img {
+        width: 60px;
+        height: 60px;
+        cursor: pointer;
+      }
+      div {
+        width: 60px;
+        height: 60px;
+        background-color: #b7b7b769;
+        position: absolute;
+        top: 0;
+        left: 0;
+        text-align: center;
+        line-height: 60px;
+        cursor: pointer;
+        display: none;
+        i {
+          color: #fff;
+          font-size: 20px;
+        }
+      }
     }
+    .footer-img:hover > div {
+      display: block;
+    }
+
     .footer-song {
       font-size: 14px;
+      margin-left: 10px;
       > div {
         display: flex;
         i {
