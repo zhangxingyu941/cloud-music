@@ -73,7 +73,7 @@ function handleMusicDetails() {
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: 0.5s ease-in-out;
+  transition: 0.2s ease-in-out;
   > i {
     position: absolute;
     top: 20px;

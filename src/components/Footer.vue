@@ -41,17 +41,19 @@
           <span :style="{ height: bottom + 'px' }"></span>
         </div>
       </div>
-      <i class="iconfont icon-24gf-playlist"></i>
+      <i class="iconfont icon-24gf-playlist" @click="handlePlaylistShow"></i>
     </div>
   </div>
   <MusicDetails :isShow="isShow" @MusicShow="handleMusicDetails" />
+  <Playlist :isShowPlaylist="isShowPlaylist" />
 </template>
 
 <script lang="ts" setup>
 import { ref } from "vue";
 import MusicDetails from "./musicDetails/MusicDetails.vue";
+import Playlist from "./Playlist.vue";
 
-let bottom = ref<number>(0);
+let bottom = ref<number>(50);
 let isMove = false;
 let yVal = 0;
 function handleVoiceRegulatorMousedown(e: any) {
@@ -75,6 +77,11 @@ document.onmouseup = handleVoiceRegulatorMouseup;
 let isShow = ref<boolean>(false);
 function handleMusicDetails() {
   isShow.value = !isShow.value;
+}
+
+let isShowPlaylist = ref<boolean>(false);
+function handlePlaylistShow() {
+  isShowPlaylist.value = !isShowPlaylist.value;
 }
 </script>
 

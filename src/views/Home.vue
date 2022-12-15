@@ -3,23 +3,42 @@
     <Header />
   </div>
   <div class="main">
-    <div>
+    <div class="main-left">
       <Sidebar />
     </div>
-    <div>
-      <Router-view />
-    </div>
+    <c-scrollbar>
+      <div class="main-right">
+        <Router-view />
+      </div>
+    </c-scrollbar>
   </div>
   <div id="footer">
     <Footer />
   </div>
+  <Login-dialog v-if="isLoginShow" />
 </template>
 
 <script lang="ts" setup>
+import { onMounted } from "vue";
 import { RouterView } from "vue-router";
+import { storeToRefs } from "pinia";
 import Header from "components/Header.vue";
 import Sidebar from "components/Sidebar.vue";
 import Footer from "components/Footer.vue";
+import LoginDialog from "components/loginDialog/LoginDialog.vue";
+import { userInfo } from "../store/user";
+import { getAccountInfo, anonimousLogin } from "../api/login";
+
+const users = userInfo();
+const { isLoginShow, user } = storeToRefs(users);
+
+onMounted(async () => {
+  const { profile } = await getAccountInfo();
+  if (profile) return;
+  anonimousLogin().then((res) => {
+    localStorage.setItem("cookie", res.cookie);
+  });
+});
 </script>
 
 <style scoped lang="less">
@@ -37,21 +56,18 @@ import Footer from "components/Footer.vue";
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
-
-  > div:first-child {
-    width: 200px;
-    border-right: 1px solid #e0e0e0;
-  }
-
-  > div:last-child {
-    box-sizing: border-box;
-    padding: 20px 0 0;
-    width: calc(100% - 200px);
-    overflow-y: scroll;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+}
+.main-left {
+  width: 200px;
+  border-right: 1px solid #e0e0e0;
+}
+.main-right {
+  box-sizing: border-box;
+  padding: 20px 0 0;
+  width: calc(100vw - 232px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 #footer {

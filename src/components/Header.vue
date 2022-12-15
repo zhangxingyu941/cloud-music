@@ -4,45 +4,47 @@
       <img src="../assets/img/logo.webp" alt="logo" />
       <div class="header-right">
         <div class="header-right-search">
-          <input type="text" placeholder="请输入歌名 歌手 歌词或专辑" />
+          <input
+            type="text"
+            v-model="searchText"
+            @focus="handleSearchFocus"
+            @input="inputSearch"
+            :placeholder="searchKeyWords"
+          />
           <button><i class="iconfont icon-sousuo"></i></button>
           <div class="search-results">
-            <div class="cearch-type">
-              <i class="iconfont icon-yinle"><span>单曲</span></i>
-              <div>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
+            <c-scrollbar maxHeight="50vh" trigger="hover">
+              <div class="cearch-type" v-if="searchText && searchList.singleList?.length">
+                <i class="iconfont icon-yinle"><span>单曲</span></i>
+                <div @click="handleSearchClick(1, $event)">
+                  <p v-for="item in searchList.singleList" :key="item.id">{{ item.name }}</p>
+                </div>
               </div>
-            </div>
-            <div class="cearch-type">
-              <i class="iconfont icon-geshou"><span>歌手</span></i>
-              <div>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
+              <div class="cearch-type" v-if="searchText && searchList.singerList?.length">
+                <i class="iconfont icon-geshou"><span>歌手</span></i>
+                <div @click="handleSearchClick(100, $event)">
+                  <p v-for="item in searchList.singerList" :key="item.id">{{ item.name }}</p>
+                </div>
               </div>
-            </div>
-            <div class="cearch-type">
-              <i class="iconfont icon-zhuanji"><span>专辑</span></i>
-              <div>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
+              <div class="cearch-type" v-if="searchText && searchList.albumList?.length">
+                <i class="iconfont icon-zhuanji"><span>专辑</span></i>
+                <div @click="handleSearchClick(10, $event)">
+                  <p v-for="item in searchList.albumList" :key="item.id">{{ item.name }}</p>
+                </div>
               </div>
-            </div>
-            <div class="cearch-type">
-              <i class="iconfont icon-gedan1"><span>歌单</span></i>
-              <div>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
-                <p>111</p>
+              <div class="cearch-type" v-if="searchText && searchList.playlistList?.length">
+                <i class="iconfont icon-gedan1"><span>歌单</span></i>
+                <div @click="handleSearchClick(1000, $event)">
+                  <p v-for="item in searchList.playlistList" :key="item.id">{{ item.name }}</p>
+                </div>
               </div>
-            </div>
+              <div class="cearch-type" v-if="!searchText && searchList.hotSearchList?.length">
+                <i class="iconfont icon-resou"><span>热搜</span></i>
+                <div>
+                  <p v-for="item in searchList.hotSearchList" :key="item.iconUrl">{{ item.searchWord }}</p>
+                </div>
+              </div>
+            </c-scrollbar>
           </div>
         </div>
         <i class="iconfont icon-huanfu"></i>
@@ -51,26 +53,48 @@
           <span :class="huanfu === 'dark' && 'current'">暗色</span>
         </div>
         <div class="header-right-login" @click="login">
-          <img src="../assets/img/logo.webp" alt="头像" />
-          <span>未登录</span>
+          <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="头像" />
+          <img v-else src="../assets/img/logo.webp" alt="头像" />
+          <span>{{ user.name || "未登录" }}</span>
         </div>
+        <div v-if="user.avatarUrl" class="logout" @click="logout">退出登录</div>
         <a href="https://github.com/zhangxingyu941/cloud-music" target="_blank">
           <img src="../assets/img/githublogo.png" alt="github" title="点击跳转github" />
         </a>
       </div>
     </div>
   </div>
-  <LoginDialog ref="loginRef" />
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
-import LoginDialog from "./loginDialog/LoginDialog.vue";
+import { ref, reactive, onMounted, getCurrentInstance } from "vue";
+import { storeToRefs } from "pinia";
+import { getSearchKeyWords, getHotSearch, getSearchsuggest, search } from "../api/header";
+import { logout as apiLogout } from "../api/login";
+import { debounce } from "../utils/tools";
+import { userInfo } from "../store/user";
 
-let loginRef = ref<any>(null);
+const users = userInfo();
+const { user } = storeToRefs(users);
+const { appContext } = getCurrentInstance()!;
+
 function login() {
-  loginRef.value.loginShow();
+  if (user.value.avatarUrl) return;
+  users.isLoginShow = !users.isLoginShow;
 }
+
+function logout() {
+  apiLogout().then(() => {
+    users.$reset();
+    localStorage.removeItem("cookie");
+    appContext.config.globalProperties.$notify({
+      type: "success",
+      title: "已退出登录",
+      showClose: false,
+    });
+  });
+}
+
 type huanfuType = "default" | "dark";
 let huanfu = ref<huanfuType>("default");
 function handleHuanfu(e: any) {
@@ -88,6 +112,69 @@ function handleHuanfu(e: any) {
     const styles = document.getElementsByTagName("style");
     styles[styles.length - 1].remove();
   }
+}
+
+interface searchListType {
+  singleList: Array<any>;
+  playlistList: Array<any>;
+  hotSearchList: Array<any>;
+  albumList: Array<any>;
+  singerList: Array<any>;
+}
+
+let searchList = reactive<searchListType>({
+  singleList: [],
+  playlistList: [],
+  hotSearchList: [],
+  albumList: [],
+  singerList: [],
+});
+let searchText = ref<string>("");
+let searchKeyWords = ref<string>("");
+onMounted(() => {
+  getSearchKeyWords().then((res: any) => {
+    const { data } = res;
+    searchKeyWords.value = data.showKeyword;
+  });
+});
+function handleSearchFocus() {
+  if (searchList.hotSearchList.length) return;
+  getHotSearch().then((res) => {
+    searchList.hotSearchList = res.data;
+  });
+}
+function handleSearcInput() {
+  getSearchsuggest(searchText.value).then((res) => {
+    const { result } = res;
+    searchList.albumList = result?.albums || [];
+    searchList.playlistList = result?.playlists || [];
+    searchList.singerList = result?.artists || [];
+    searchList.singleList = result?.songs || [];
+  });
+}
+const inputSearch = debounce(handleSearcInput, 200);
+async function handleSearchClick(type: number, e: any) {
+  console.log(type, e.target.innerText);
+  searchText.value = e.target.innerText;
+  let res: any;
+  switch (type) {
+    case 1: // 单曲
+      res = await search(searchText.value);
+      break;
+    case 10: // 专辑
+      res = await search(searchText.value, 10);
+      break;
+    case 100: // 歌手
+      res = await search(searchText.value, 100);
+      break;
+    case 1000: // 歌单
+      res = await search(searchText.value, 1000);
+      break;
+    default: // 热搜
+      res = await search(searchText.value, 1000);
+      break;
+  }
+  console.log(res);
 }
 </script>
 
@@ -151,7 +238,7 @@ function handleHuanfu(e: any) {
           border: none;
           height: 30px;
           width: 200px;
-          font-size: 16px;
+          font-size: 14px;
           padding: 0 0 0 4px;
         }
 
@@ -171,7 +258,9 @@ function handleHuanfu(e: any) {
         button:hover {
           background-color: #eee;
         }
-
+        .search-results:hover {
+          display: block;
+        }
         .search-results {
           display: none;
           position: absolute;
@@ -182,9 +271,7 @@ function handleHuanfu(e: any) {
           border-radius: 10px;
           box-shadow: 0 0 10px rgb(124, 124, 124);
           box-sizing: border-box;
-          padding: 10px;
-          max-height: 50vh;
-          overflow-y: scroll;
+          padding: 0 6px;
           .cearch-type {
             display: flex;
             border-bottom: 1px solid #999;
@@ -199,11 +286,17 @@ function handleHuanfu(e: any) {
                 color: #999;
               }
             }
+            .icon-resou {
+              color: red;
+              span {
+                color: red;
+              }
+            }
             div {
               width: 75%;
               border-left: 1px solid #999;
               p {
-                padding: 10px 0;
+                padding: 10px 6px;
                 box-sizing: border-box;
                 width: 100%;
                 overflow: hidden;
@@ -243,6 +336,24 @@ function handleHuanfu(e: any) {
           color: #fff;
           letter-spacing: 2px;
         }
+      }
+      .header-right-login:hover ~ .logout {
+        display: block;
+      }
+      .logout {
+        display: none;
+        position: absolute;
+        background-color: #fff;
+        top: 55px;
+        padding: 6px 8px;
+        right: 110px;
+        border-radius: 3px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.446);
+        cursor: pointer;
+      }
+      .logout:hover {
+        background-color: #eee;
+        display: block;
       }
       > i {
         color: #fff;

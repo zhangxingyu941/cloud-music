@@ -1,15 +1,15 @@
 <template>
   <div class="recommend-box">
     <Swiper></Swiper>
-    <PlaylistCard />
-    <NewDisc />
+    <Playlist-card />
+    <New-disc />
     <div class="song-list">
-      <SongList v-for="(item, index) in [1, 2, 3, 4]" :key="index" />
+      <Song-list v-for="(item, index) in [1, 2, 3, 4]" :key="index" />
     </div>
-    <NewMv />
+    <New-mv />
     <div class="hot-list">
-      <HotRadio />
-      <HotSinger />
+      <Hot-radio />
+      <Hot-singer />
     </div>
   </div>
 </template>
